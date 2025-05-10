@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+import 'home.dart';
 
 class counter extends StatefulWidget {
   static const String routName = 'counter';
@@ -26,7 +27,14 @@ class counterState extends State<counter> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('omar counter'), centerTitle: true),
+      appBar: AppBar(
+          leading: ElevatedButton(
+            child: Icon(Icons.home),
+            onPressed: () {
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => home()));
+            },),
+          title: Text('omar counter'), centerTitle: true),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
