@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:local/counter.dart';
 import 'package:local/home.dart';
 import 'package:local/login.dart';
-
-import 'package:local/counter.dart';
+import 'package:local/themeData.dart';
 
 void main() {
   //runApp(const MyApp());
@@ -17,8 +17,9 @@ class testApp extends StatelessWidget {
       routes: {
         login.routName: (context) => login(),
         home.routName: (context) => home(),
-        counter.routName: (conext) => counter(),
+        counter.routName: (context) => counter(),
       },
+      theme: themeD.lightMode,
     );
   }
 }
