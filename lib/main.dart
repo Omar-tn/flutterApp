@@ -1,19 +1,33 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:local/counter.dart';
 import 'package:local/home.dart';
 import 'package:local/login.dart';
 import 'package:local/themeData.dart';
 
-void main() {
-  //runApp(const MyApp());
-  runApp(testApp());
+// Must be a top-level function
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If using Firebase, initialize it here too
+  await Firebase.initializeApp();
+  print('🔔 Background message received: ${message.messageId}');
 }
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  runApp(MyApp());
+}
+
 
 class testApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       initialRoute: counter.routName,
+
+
+
       routes: {
         login.routName: (context) => login(),
         home.routName: (context) => home(),
@@ -75,6 +89,30 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  void initState() {
+    super.initState();
+    // Request permission for iOS
+    _messaging.requestPermission();
+
+    // Get the token for the device
+    _messaging.getToken().then((token) {
+      print('Device Token: $token');
+    });
+
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('🔔 Message received: ${message.notification?.title} \n ${message.notification?.body}');
+    });
+
+    // App opened via notification
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('📨 Message opened app: ${message.notification?.title}');
+    });
+
+  }
+
 
   void _incrementCounter() {
     setState(() {
@@ -123,12 +161,15 @@ class _MyHomePageState extends State<MyHomePage> {
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+          children:
+
+          <Widget>[
             const Text('You have pushed the button this many times:'),
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+
           ],
         ),
       ),
