@@ -26,37 +26,39 @@ class BookingTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blue,
-      body: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                Row(
-                  children: [
-                    SizedBox(width: 150),
-
-                    Expanded(
-                      flex: 2,
-                      child: ListView.separated(
-                        separatorBuilder: (context, index) {
-                          return Divider(color: Colors.black, thickness: 3);
-                        },
-                        itemBuilder: (context, index) {
-                          return Text(words[index]);
-                        },
-                        itemCount: words.length,
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.blue,
+        body: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(width: 150),
+      
+                      Expanded(
+                        flex: 2,
+                        child: ListView.separated(
+                          separatorBuilder: (context, index) {
+                            return Divider(color: Colors.black, thickness: 3);
+                          },
+                          itemBuilder: (context, index) {
+                            return Text(words[index]);
+                          },
+                          itemCount: words.length,
+                        ),
                       ),
-                    ),
-                    // SizedBox(width: 50,),
-                  ],
-                ),
-                Text('omar'),
-              ],
+                      // SizedBox(width: 50,),
+                    ],
+                  ),
+                  Text('omar'),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
