@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:local/announcements.dart';
 import 'package:local/courseAction.dart';
 import 'package:local/feedback.dart';
 import 'package:local/itemwidget.dart';
@@ -60,18 +61,28 @@ class AnnouncementsPage extends StatelessWidget {
       appBar: AppBar(title: Text('Announcements'),
       leading: Container(),
       ),
-      body: ListView.builder(
-        itemCount: 6,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: EdgeInsets.all(10),
-            child: ListTile(
-              title: Text('Announcement Title'),
-              subtitle: Text('Apr 23, 2024\nThis is a sample announcement.'),
-              // trailing: Container(),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: 6,
+              itemBuilder: (context, index) {
+                return Card(
+                  margin: EdgeInsets.all(10),
+                  child: ListTile(
+                    title: Text('Announcement Title'),
+                    subtitle: Text(
+                        'Apr 23, 2024\nThis is a sample announcement.'),
+                    // trailing: Container(),
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+          SizedBox(height: 10),
+
+          Expanded(child: CourseAnnouncementsScreen())
+        ],
       ),
 
     );

@@ -72,6 +72,11 @@ class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
     }
   }
 
+  //get the available students from the server and display them in a list
+  
+
+
+
   /*Future<void> fetchStudents() async {
     final response = await http.get(Uri.parse(root.domain()+'partners/available?uid=$userId'));
     if (response.statusCode == 200) {
@@ -323,17 +328,6 @@ class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
 
 }
 
-class partners extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Partners',
-        style: Theme.of(context).textTheme.headlineMedium,
-      ),
-    );
-  }
-}
 
 Future<http.Response> getPartnerRequests(String userId) async {
   final response = await http.get(
@@ -415,7 +409,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error processing request: ${response.toString()}'),
+            content: Text('Error: ${response.body}'),
           ),
         );
       }
@@ -489,15 +483,27 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 }
+
+////////////////////notification.dart\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/////////////////////search.dart\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-class search extends StatelessWidget {
-  String sub = "GP1";
+class search extends StatefulWidget {
+  @override
+  State<search> createState() => _searchState();
+}
+
+class _searchState extends State<search> {
+  String sub = "";
 
   String field = "Name" ;
 
   String text = "";
 
+  final String userId = 'firebase'; //REPLACE: Replace with actual user ID
   var formKey = GlobalKey<FormState>();
 
   @override
@@ -518,6 +524,9 @@ class search extends StatelessWidget {
                   ))
                   .toList(),
               onChanged: (value) {
+                setState(() {
+                  // Update the selected subject
+                });
                 sub = value! ;
               },
               validator: (value) =>
@@ -561,6 +570,8 @@ class search extends StatelessWidget {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => searchResult(
+
+                        uid: userId,
                         subject: sub ?? 'GP1'   ,
                         field: field ?? 'Name',
                         text: text,
@@ -576,7 +587,9 @@ class search extends StatelessWidget {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+
+
+              onPressed: sub.isEmpty ? null : () {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -592,9 +605,36 @@ class search extends StatelessWidget {
                           child: Text('Cancel'),
                         ),
                         TextButton(
-                          onPressed: () {
+                          onPressed: () async {
                             Navigator.of(context).pop(true);
-                            // Handle public request logic here
+                            try {
+                              final response = await http.post(
+                                Uri.parse(root.domain() + 'partners/request'),
+                                body: {
+                                  'from_id': userId,
+                                  'to_id': '',
+                                  'subject': sub,
+                                },
+                              );
+                              if (response.statusCode == 200) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(
+                                      'Public request created successfully for $sub')),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(
+                                      'Error creating public request: ${response
+                                          .body}')),
+                                );
+                              }
+                            } catch (e) {
+                              print('Error creating public request: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(
+                                    'Error creating public request. Please try again later.')),
+                              );
+                            }
                           },
                           child: Text('Confirm'),
                         ),
@@ -603,6 +643,9 @@ class search extends StatelessWidget {
                   },
                 );
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: sub.isEmpty ? Colors.grey : null,
+              ),
               child: Text('Public Request'),
             ),
           ],
@@ -612,100 +655,314 @@ class search extends StatelessWidget {
   }
 }
 
-class searchResult extends StatelessWidget {
+
+///////////search.dart\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+//////////searchResult.dart\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+class searchResult extends StatefulWidget {
   static String routName = 'searchResult';
   final String subject;
   final String field;
   final String text;
+  final String uid;
+
 
   const searchResult({
+    required this.uid,
     required this.subject,
     required this.field,
     required this.text,
   });
 
-  //search for student partners based on subject, field, and text and list the students result
-  Future<List<dynamic>> searchStudents() async {
-    try {
-      final response = await http.get(
-        Uri.parse(
-          root.domain() +
-              'partners/search?subject=$subject&field=$field&text=$text',
-        ),
-      );
+  @override
+  State<searchResult> createState() => _searchResultState();
+}
 
+class _searchResultState extends State<searchResult> {
+  List<dynamic> searchResults = [];
+
+  Map<String, dynamic> result = {};
+
+  @override
+  void initState() {
+    super.initState();
+    searchStudents();
+  }
+
+  // make a function to request students based on uid
+  // Function to send a partnership request based on uid
+  Future<void> sendPartnershipRequest(String toUid, String subject) async {
+    try {
+      final response = await http.post(
+        Uri.parse(root.domain() + 'partners/request'),
+        body: {
+          'from_id': 'firebase', // Replace with actual user ID if needed
+          'to_id': toUid,
+          'subject': subject,
+        },
+      );
       if (response.statusCode == 200) {
-        return json.decode(response.body) as List<dynamic>;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Request sent successfully')),
+        );
       } else {
-        throw Exception('Failed to load search results');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error sending request: ${response.reasonPhrase}')),
+        );
       }
     } catch (e) {
-      print('Error searching students: $e');
-      return [];
+      print('Error sending request: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error sending request. Please try again later.')),
+      );
     }
   }
 
+  //search for student partners based on subject, field, and text and list the students result
+  Future<void> searchStudents() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          root.domain() + 'partners/search?uid=${widget.uid}&subject=${widget
+              .subject}&field=${widget.field}&text=${widget.text}',
+        ),
+      );
 
+      setState(() {
+
+      });
+
+      if (response.statusCode == 200) {
+        searchResults = json.decode(response.body);
+      }
+      else if (response.statusCode == 500) {
+        print('you have already partner');
+        result = json.decode(response.body);
+        print('No students found for the given criteria.');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+          ),
+        );
+      }
+      else {
+        print('Error searching students: ${response.reasonPhrase}');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Error searching students: ${response.reasonPhrase} ' +
+                    response.body),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error searching students: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        SnackBar(
+          content: Text('Error searching students. Please try again later.'),
+        ),
+      );
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Search Results'),
       ),
-      body: Center(
-        child: Text(
-          'Searching for $text in $field for subject $subject',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
+      body:
+      result['hasPartner'] ?? false
+          ? Center(child: Text('You have already a partner',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),))
+
+          : ListView.builder(
+        itemCount: searchResults?.length ?? 0,
+        itemBuilder: (context, index) {
+          return Card(
+            margin: EdgeInsets.all(8.0),
+            child: ListTile(
+              title: Text(searchResults[index]['name'] ?? ''),
+              subtitle: Text(searchResults[index]['field'] ?? ''),
+              trailing: ElevatedButton(
+                onPressed: () {
+                  sendPartnershipRequest(
+                      searchResults[index]['id'], widget.field);
+                },
+                child: Text('Send Request'),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class supervisor extends StatelessWidget {
+////////////////searchResult.dart\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+///////////////supervisor.dart\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+class supervisor extends StatefulWidget {
+  @override
+  State<supervisor> createState() => _supervisorState();
+}
+
+class _supervisorState extends State<supervisor> {
+  String userId = 'firebase'; //REPLACE: Replace with actual user ID 
+  List<dynamic> partners = [];
+  bool isLoading = false;
+
+  final _formKey = GlobalKey<FormState>();
+  String? selectedSubject;
+  String? selectedDoctor;
+  String projectDescription = '';
+  List<String> doctors = ['Dr. Ali', 'Dr. Sara', 'Dr. Ahmed'];
+
+
+  @override
+  void initState() {
+    super.initState();
+    getPartners();
+  }
+
+  Future<void> getPartners() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final response = await http.get(
+        Uri.parse(root.domain() + 'user/partnerships?uid=$userId'),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          partners = json.decode(response.body);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+              'Error fetching partners: ${response.reasonPhrase}')),
+        );
+      }
+    } catch (e) {
+      print('Error fetching partners: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error fetching partners. Please try again later.')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Request Supervisor',
-            style: Theme.of(context).textTheme.headlineMedium,
+      child: partners.isEmpty
+          ? Text('You have no partners',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))
+          : Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Request Supervisor',
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .headlineMedium,
+              ),
+              SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(labelText: 'Select Subject'),
+                value: selectedSubject,
+                items: partners.map((partner) {
+                  return DropdownMenuItem<String>(
+                    value: partner['subject'],
+                    child: Text(partner['subject'] ?? ''),
+                  );
+                }).toList(),
+                validator: (value) =>
+                value == null ? 'Please select a subject' : null,
+                onChanged: (value) {
+                  setState(() {
+                    selectedSubject = value;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(labelText: 'Select Supervisor'),
+                value: selectedDoctor,
+                items: doctors
+                    .map((doctor) =>
+                    DropdownMenuItem<String>(
+                      value: doctor,
+                      child: Text(doctor),
+                    ))
+                    .toList(),
+                validator: (value) =>
+                value == null ? 'Please select a supervisor' : null,
+                onChanged: (value) {
+                  setState(() {
+                    selectedDoctor = value;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Project Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                validator: (value) =>
+                value != null && value.isEmpty
+                    ? null
+                    : null,
+                onChanged: (value) {
+                  setState(() {
+                    projectDescription = value;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    // TODO: Handle form submission
+                    print('Subject: $selectedSubject');
+                    print('Doctor: $selectedDoctor');
+                    print('Description: $projectDescription');
+                  }
+                },
+                child: Text('Submit Request'),
+              ),
+            ],
           ),
-          SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            decoration: InputDecoration(labelText: 'Select Supervisor'),
-            items: ['Dr. Ali', 'Dr. Sara', 'Dr. Ahmed']
-                .map((supervisor) =>
-                DropdownMenuItem<String>(
-                  value: supervisor,
-                  child: Text(supervisor),
-                ))
-                .toList(),
-            onChanged: (value) {
-              // Handle supervisor selection
-            },
-          ),
-          SizedBox(height: 20),
-          TextField(
-            decoration: InputDecoration(
-              labelText: 'Enter additional notes',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              // Handle submit button press
-            },
-            child: Text('Submit'),
-          ),
-        ],
+        ),
       ),
     );
   }
+
+
 }
+
