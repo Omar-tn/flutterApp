@@ -1,9 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local/counter.dart';
 import 'package:local/home.dart';
+import 'package:local/homepage.dart';
 import 'package:local/login.dart';
+import 'package:local/student_partner.dart';
 import 'package:local/themeData.dart';
 
 // Must be a top-level function
@@ -14,9 +17,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: FirebaseOptions(
+          apiKey: "AIzaSyBnaOt5fXNYUNGEtdVubRonek_ORrOLjT4",
+          authDomain: "sample-firebase-ai-app-bf83c.firebaseapp.com",
+          projectId: "sample-firebase-ai-app-bf83c",
+          storageBucket: "sample-firebase-ai-app-bf83c.firebasestorage.app",
+          messagingSenderId: "506800753202",
+          appId: "1:506800753202:web:c144765c6170e1eb564a2b"
+      ),
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(MyApp());
+  runApp(testApp());
 }
 
 
@@ -24,14 +40,21 @@ class testApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      initialRoute: counter.routName,
+      initialRoute: login.routName,
 
-
+      debugShowCheckedModeBanner: false,
 
       routes: {
+
         login.routName: (context) => login(),
+
+        homePage.routName: (context) => homePage(),
+        //
         home.routName: (context) => home(),
         counter.routName: (context) => counter(),
+        StudentPartnersScreen.routName: (context) => StudentPartnersScreen(),
+        NotificationScreen.routName : (context) => NotificationScreen(),
+
       },
       theme: themeD.lightMode,
     );

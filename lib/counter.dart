@@ -28,18 +28,29 @@ class counterState extends State<counter> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          leading: ElevatedButton(
-            child: Icon(Icons.home),
-            onPressed: () {
-              Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => home()));
-            },),
-          title: Text('omar counter'), centerTitle: true),
+        leading: IconButton(
+          icon: Icon(Icons.home),
+
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => home()),
+            );
+          },
+        ),
+        title: Text('omar counter'),
+        centerTitle: true,
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('$cnt', style: TextStyle(fontSize: 40)),
+            Text(
+              '$cnt',
+              style: TextStyle(
+                  fontSize: 40,
+                  color: Colors.blueGrey),
+            ),
             FloatingActionButton(
               onPressed: () {
                 cnt++;
