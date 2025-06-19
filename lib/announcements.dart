@@ -23,7 +23,7 @@ class _CourseAnnouncementsScreenState extends State<CourseAnnouncementsScreen> {
   Future<void> fetchCourses() async {
     try {
       final response = await http.get(
-        Uri.parse(root.domain() + 'coursesAnnounced'),
+        Uri.parse(root.domain() + 'coursesAnnounced/only'),
       );
       if (response.statusCode == 200) {
         setState(() {
@@ -45,6 +45,9 @@ class _CourseAnnouncementsScreenState extends State<CourseAnnouncementsScreen> {
       );
       if (response.statusCode == 200) {
         fetchCourses();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(response.body)));
       } else {
         print('Failed to enroll:');
         print(response.body);
@@ -65,6 +68,9 @@ class _CourseAnnouncementsScreenState extends State<CourseAnnouncementsScreen> {
       );
       if (response.statusCode == 200) {
         fetchCourses();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(response.body)));
       } else {
         print(response.body);
 
@@ -75,14 +81,13 @@ class _CourseAnnouncementsScreenState extends State<CourseAnnouncementsScreen> {
       print('Error voting for course: $e');
 
       // print('Error getting user ID: $e');
-      return;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Course Announcements')),
+      appBar: AppBar(title: Text('Course Announcements'), leading: Container()),
       body: ListView.builder(
         padding: EdgeInsets.all(8),
         // shrinkWrap: true,
@@ -97,23 +102,44 @@ class _CourseAnnouncementsScreenState extends State<CourseAnnouncementsScreen> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Instructor: ${course['instructor']}'),
-                  Text('Deadline: ${course['deadline']}'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('\nTime: ${course['time'] ?? 'N/A'}'),
+                      Row(
+                        children: [
+                          Text('Status: '),
+                          course['status'] == 'open'
+                              ? Icon(
+                                Icons.lock_open_rounded,
+                                color: Colors.green,
+                              )
+                              : Icon(Icons.lock, color: Colors.red),
+                        ],
+                      ),
+                    ],
+                  ),
                   Text(
-                    'Votes: ${course['votes']} | Participants: ${course['participants']}',
+                    'Votes: ${course['votes']}\nParticipants: ${course['participants']}',
                   ),
-                ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.thumb_up),
-                    onPressed: () => voteCourse(course['id'].toString()),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.group_add),
-                    onPressed: () => enrollCourse(course['id'].toString()),
+
+                  SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      TextButton.icon(
+                        icon: Icon(Icons.thumb_up, size: 40),
+                        label: Text('Maybe', style: TextStyle(fontSize: 20)),
+
+                        onPressed: () => voteCourse(course['id'].toString()),
+                      ),
+
+                      TextButton.icon(
+                          icon: Icon(Icons.group_add, size: 40),
+                          label: Text('Enroll', style: TextStyle(fontSize: 20)),
+                          onPressed: () => enrollCourse(course['id'].toString())
+                      ),
+                    ],
                   ),
                 ],
               ),
