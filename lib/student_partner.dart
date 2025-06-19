@@ -247,7 +247,8 @@ class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Error deleting request: ${response.reasonPhrase}',
+                                        'Error deleting request: ${response
+                                            .body}',
                                       ),
                                     ),
                                   );
@@ -709,7 +710,7 @@ class _searchResultState extends State<searchResult> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error sending request: ${response.reasonPhrase}')),
+              content: Text('Error sending request: ${response.body}')),
         );
       }
     } catch (e) {
@@ -736,6 +737,7 @@ class _searchResultState extends State<searchResult> {
       });
 
       if (response.statusCode == 200) {
+        print("success");
         searchResults = json.decode(response.body);
       }
       else if (response.statusCode == 500) {
@@ -798,7 +800,7 @@ class _searchResultState extends State<searchResult> {
               trailing: ElevatedButton(
                 onPressed: () {
                   sendPartnershipRequest(
-                      searchResults[index]['id'], widget.field);
+                      searchResults[index]['firebase_uid'], widget.subject);
                 },
                 child: Text('Send Request'),
               ),
@@ -823,19 +825,22 @@ class supervisor extends StatefulWidget {
 class _supervisorState extends State<supervisor> {
   String userId = 'firebase'; //REPLACE: Replace with actual user ID 
   List<dynamic> partners = [];
+  List<dynamic> supervisors = [];
   bool isLoading = false;
 
   final _formKey = GlobalKey<FormState>();
-  String? selectedSubject;
-  String? selectedDoctor;
+  String? selectedSubject = null;
+  String? selectedDoctor = null;
   String projectDescription = '';
-  List<String> doctors = ['Dr. Ali', 'Dr. Sara', 'Dr. Ahmed'];
+  Map<String,
+      dynamic>? selectedPartnership = null; // Store selected partnership details
 
 
   @override
   void initState() {
     super.initState();
     getPartners();
+    fetchSupervisors();
   }
 
   Future<void> getPartners() async {
@@ -870,6 +875,40 @@ class _supervisorState extends State<supervisor> {
   }
 
 
+  Future<void> fetchSupervisors() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final response = await http.get(
+        Uri.parse(root.domain() + 'supervisors'),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          supervisors = json.decode(response.body);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+              'Error fetching supervisors: ${response.reasonPhrase}')),
+        );
+      }
+    } catch (e) {
+      print('Error fetching supervisors: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(
+            'Error fetching supervisors. Please try again later.')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -891,12 +930,12 @@ class _supervisorState extends State<supervisor> {
                     .headlineMedium,
               ),
               SizedBox(height: 20),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<Map<String, dynamic>>(
                 decoration: InputDecoration(labelText: 'Select Subject'),
-                value: selectedSubject,
+                value: selectedPartnership,
                 items: partners.map((partner) {
-                  return DropdownMenuItem<String>(
-                    value: partner['subject'],
+                  return DropdownMenuItem<Map<String, dynamic>>(
+                    value: partner,
                     child: Text(partner['subject'] ?? ''),
                   );
                 }).toList(),
@@ -904,7 +943,8 @@ class _supervisorState extends State<supervisor> {
                 value == null ? 'Please select a subject' : null,
                 onChanged: (value) {
                   setState(() {
-                    selectedSubject = value;
+                    selectedPartnership = value;
+                    selectedSubject = value?['subject'];
                   });
                 },
               ),
@@ -912,13 +952,20 @@ class _supervisorState extends State<supervisor> {
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(labelText: 'Select Supervisor'),
                 value: selectedDoctor,
-                items: doctors
-                    .map((doctor) =>
+                items: isLoading
+                    ? [
+                  DropdownMenuItem<String>(
+                      value: null, child: Text('Loading...'))
+                ]
+                    :
+                supervisors.map((supervisor) =>
+
+
                     DropdownMenuItem<String>(
-                      value: doctor,
-                      child: Text(doctor),
-                    ))
-                    .toList(),
+                      value: supervisor['firebase_uid'].toString(),
+                      child: Text(supervisor['name'] ?? ''),
+                    )
+                ).toList(),
                 validator: (value) =>
                 value == null ? 'Please select a supervisor' : null,
                 onChanged: (value) {
@@ -948,10 +995,7 @@ class _supervisorState extends State<supervisor> {
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    // TODO: Handle form submission
-                    print('Subject: $selectedSubject');
-                    print('Doctor: $selectedDoctor');
-                    print('Description: $projectDescription');
+                    submitSupervisorRequest();
                   }
                 },
                 child: Text('Submit Request'),
@@ -963,6 +1007,44 @@ class _supervisorState extends State<supervisor> {
     );
   }
 
+  Future<void> submitSupervisorRequest() async {
+    try {
+      final response = await http.post(
+        Uri.parse(root.domain() + 'supervisor/request'),
+        body: {
+          'student_id': userId,
+          'supervisor_id': selectedDoctor,
+          'partnership_id': selectedPartnership?['id'].toString(),
+          'subject': selectedPartnership?['subject'],
+          'description': projectDescription,
+        },
+      );
 
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Supervisor request submitted successfully')),
+        );
+        setState(() {
+          selectedSubject = null;
+          selectedDoctor = null;
+          selectedPartnership = null;
+          projectDescription = '';
+          //_formKey.currentState?.reset();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+              'Error submitting request: ${response.body}')),
+
+        );
+      }
+    } catch (e) {
+      print('Error submitting supervisor request: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Error submitting request. Please try again later.')),
+      );
+    }
+  }
 }
 

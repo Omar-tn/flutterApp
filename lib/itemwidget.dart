@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class itemWidget extends StatelessWidget {
@@ -71,3 +72,28 @@ class ProfileCard extends StatelessWidget {
   }
 }
 
+SliverGridDelegateWithFixedCrossAxisCount my_Grid(BuildContext context,
+    [int width = 600, double mobileAxis = 1]) {
+  int count = getAxisCount(context, width);
+  // count = count < 1 ? 1 : count; // Ensure at least one column
+
+
+  return
+    SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: kIsWeb ? count : 1,
+        //kIsWeb ? 3 : 1,
+        childAspectRatio: kIsWeb ? count == 1 ? 1 : 1.5 : mobileAxis,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        mainAxisExtent: 350
+    );
+}
+
+int getAxisCount(BuildContext context, int width) {
+  var oWidth = MediaQuery
+      .of(context)
+      .size
+      .width;
+  var count = (oWidth / width).ceil();
+  return count;
+}

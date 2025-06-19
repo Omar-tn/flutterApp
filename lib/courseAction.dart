@@ -16,21 +16,42 @@ class NewRequestPage extends StatefulWidget {
 
 class _NewRequestPageState extends State<NewRequestPage> {
   final _formKey = GlobalKey<FormState>();
-  String? selectedCourse;
+  Map<String, dynamic>? selectedCourse;
   String? selectedType;
   final TextEditingController _detailsController = TextEditingController();
   bool isLoading = true;
-  List<String> courses = [
+  List<dynamic> courses = [
     'Software Engineering',
     'Data Structures',
     'AI',
     'IoT',
   ];
-  List<String> resCourses = [];
+  List<dynamic> resCourses = [];
+
+  final user = FirebaseAuth.instance.currentUser;
+
+  var uid;
+
+  var email;
+
+  void auth() {
+    if (user != null) {
+      final uid = user!.uid;
+      final email = user!.email;
+      // Save to memory/local storage if needed
+    } else {
+      final uid = 'guest'; //REPLACE: replace to this with FIREBASE AUTH
+      final email =
+          'sguest@stu.naja.edu'; //REPLACE: replace to this with FIREBASE AUTH
+      // Save to memory/local storage if needed
+      print('No user logged in, using guest credentials: $uid, $email');
+    }
+  }
 
   @override
   initState() {
     super.initState();
+    auth();
     // Fetch courses from server
     e();
   }
@@ -39,7 +60,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
     // Fetch section from server
     resCourses = courses;
     final response = await http.get(
-      Uri.parse(root.domain() + 'coursesAnnounced'),
+      Uri.parse(root.domain() + 'courses/official'),
     );
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -47,8 +68,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
       print("get courses successful: ${data}");
 
       resCourses =
-          data.map<String>((course) => course['title'] as String).toList();
-
+          data; //.map<String>((course) => course['title'] as String).toList();
       print("get courses successful: ${resCourses}");
 
       // Navigate to home page or save token
@@ -73,7 +93,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
   List<String> requestTypes = [
     'Enroll',
     'Withdraw',
-    'Request Help',
+    'Request information',
     'Feedback',
   ];
 
@@ -85,10 +105,11 @@ class _NewRequestPageState extends State<NewRequestPage> {
         // Simulate a delay for the request submission
         final url = Uri.parse(root.domain() + 'requestSection');
         final requestPayload = {
-          'course': selectedCourse,
+          'course': selectedCourse!['ID'].toString(),
           'type': selectedType,
           'details': _detailsController.text,
-          'user_id': FirebaseAuth.instance.currentUser?.uid ?? 'guest',
+          'user_id': FirebaseAuth.instance.currentUser?.uid ?? 'firebase',
+          //REPLACE: replace to this
         };
 
         try {
@@ -104,6 +125,13 @@ class _NewRequestPageState extends State<NewRequestPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Request submitted successfully!')),
             );
+
+            setState(() {
+              _formKey.currentState!.reset();
+              selectedCourse = null;
+              selectedType = null;
+              _detailsController.clear();
+            });
           } else {
             // Handle error response
             ScaffoldMessenger.of(context).showSnackBar(
@@ -122,18 +150,9 @@ class _NewRequestPageState extends State<NewRequestPage> {
         }
 
 
-        setState(() {
-          _formKey.currentState!.reset();
-          selectedCourse = null;
-          selectedType = null;
-          _detailsController.clear();
-
-        });
-
       }
 
       // Make an HTTP POST request to create the course request
-
 
       showDialog(
         context: context,
@@ -155,60 +174,40 @@ class _NewRequestPageState extends State<NewRequestPage> {
                 onPressed: () {
                   Navigator.of(context).pop();
 
-
                   query();
                 },
-                child: Text(
-                  'OK',
-                  style: TextStyle(color: themeD.mainColor),
-                ),
+                child: Text('OK', style: TextStyle(color: themeD.mainColor)),
               ),
             ],
           );
         },
       );
     }
-
-
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      final uid = user.uid;
-      final email = user.email;
-      // Save to memory/local storage if needed
-    } else {
-      final uid = 'guest';
-      final email = 'sguest@stu.naja.edu';
-      // Save to memory/local storage if needed
-      print('No user logged in, using guest credentials: $uid, $email');
-    }
-
-    return Center(
-      child: Container(
-
-
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('New Course Request'),
-            // backgroundColor: Colors.deepPurple,
-          ),
-          // bottomNavigationBar: BottomAppBar(
-          //   color: themeD.mainColor,
-          //   child: Padding(
-          //     // padding: EdgeInsetsGeometry.zero,
-          //     padding: const EdgeInsets.all(8.0),
-          //     child: Text(
-          //       '© 2023 Course Request System',
-          //       style: TextStyle(color: Colors.white, fontSize: 14),
-          //       textAlign: TextAlign.center,
-          //     ),
-          //   ),
-          // ),
-          body: Center(
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: const Text('New Course Request'),
+        // backgroundColor: Colors.deepPurple,
+      ),
+      // bottomNavigationBar: BottomAppBar(
+      //   color: themeD.mainColor,
+      //   child: Padding(
+      //     // padding: EdgeInsetsGeometry.zero,
+      //     padding: const EdgeInsets.all(8.0),
+      //     child: Text(
+      //       '© 2023 Course Request System',
+      //       style: TextStyle(color: Colors.white, fontSize: 14),
+      //       textAlign: TextAlign.center,
+      //     ),
+      //   ),
+      // ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -216,10 +215,14 @@ class _NewRequestPageState extends State<NewRequestPage> {
                 SizedBox(
                   // constraints: BoxConstraints(maxWidth: 800),
                   // MediaQuery.of(context).size.width > 800
-                  width: kIsWeb? MediaQuery.of(context).size.width* .4 : double.infinity,
+                  width:
+                  kIsWeb
+                      ? MediaQuery
+                      .of(context)
+                      .size
+                      .width * .4
+                      : double.infinity,
                   child: Padding(
-
-
                     padding: const EdgeInsets.all(16.0),
                     child: Form(
                       key: _formKey,
@@ -231,18 +234,20 @@ class _NewRequestPageState extends State<NewRequestPage> {
                             'Select Course',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          DropdownButtonFormField<String>(
-
+                          DropdownButtonFormField<Map<String, dynamic>>(
                             value: selectedCourse,
-                            onChanged: (value) => setState(() => selectedCourse = value),
-
+                            onChanged:
+                                (value) =>
+                                setState(() => selectedCourse = value),
+                    
                             items:
                                 isLoading
                                     ? [
                                       DropdownMenuItem(
                                         value: null,
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                           children: const [
                                             SizedBox(
                                               width: 20,
@@ -258,14 +263,21 @@ class _NewRequestPageState extends State<NewRequestPage> {
                                       ),
                                     ]
                                     : resCourses.map((course) {
-                                      return DropdownMenuItem(
+                                  return DropdownMenuItem<
+                                      Map<String, dynamic>
+                                  >(
                                         value: course,
-                                        child: Text(course),
+                                    child: Text('${course['title']} #' +
+                                        course['ID'].toString() + " " +
+                                        (course['time'] ?? '')),
                                       );
                                     }).toList(),
 
                             validator:
-                                (value) => value == null ? 'Please select a course' : null,
+                                (value) =>
+                            value == null
+                                ? 'Please select a course'
+                                : null,
                           ),
                           const SizedBox(height: 20),
                           const Text(
@@ -274,14 +286,20 @@ class _NewRequestPageState extends State<NewRequestPage> {
                           ),
                           DropdownButtonFormField<String>(
                             value: selectedType,
-                            onChanged: (value) => setState(() => selectedType = value),
+                            onChanged:
+                                (value) => setState(() => selectedType = value),
                             items:
                                 requestTypes.map((type) {
-                                  return DropdownMenuItem(value: type, child: Text(type));
+                                  return DropdownMenuItem(
+                                    value: type,
+                                    child: Text(type),
+                                  );
                                 }).toList(),
                             validator:
                                 (value) =>
-                                    value == null ? 'Please select request type' : null,
+                                value == null
+                                    ? 'Please select request type'
+                                    : null,
                           ),
                           const SizedBox(height: 20),
                           const Text(
@@ -304,7 +322,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
                           const SizedBox(height: 30),
                           ElevatedButton.icon(
                             onPressed: _submitRequest,
-                            icon: const Icon(Icons.send, ),
+                            icon: const Icon(Icons.send),
                             label: const Text('Submit Request'),
                             style: ElevatedButton.styleFrom(
                               // backgroundColor: Colors.deepPurple,

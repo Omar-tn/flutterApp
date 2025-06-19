@@ -3,9 +3,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local/counter.dart';
+import 'package:local/dashboard.dart';
 import 'package:local/home.dart';
 import 'package:local/homepage.dart';
 import 'package:local/login.dart';
+import 'package:local/root.dart';
 import 'package:local/student_partner.dart';
 import 'package:local/themeData.dart';
 
@@ -53,9 +55,13 @@ class testApp extends StatelessWidget {
         home.routName: (context) => home(),
         counter.routName: (context) => counter(),
         StudentPartnersScreen.routName: (context) => StudentPartnersScreen(),
-        NotificationScreen.routName : (context) => NotificationScreen(),
+        NotificationScreen.routName: (context) => NotificationScreen(),
+        AdminDashboard.routName: (context) =>
+            AdminDashboard(apiBaseUrl: root.domain(), firebaseUid: 'admin'),
+        // Replace with actual Firebase UID
 
       },
+
       theme: themeD.lightMode,
     );
   }
