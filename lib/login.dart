@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:local/home.dart';
+import 'package:local/signup.dart';
 import 'package:local/themeData.dart';
 
 import 'homepage.dart';
@@ -59,7 +60,11 @@ class login extends StatelessWidget {
                 }, child: Text('Login')),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, 'signup');
+                    Navigator.pushReplacement(context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                SignUpPage()
+                        ));
                   },
                   child: Text('Don’t have an account? Register'),
                 ),

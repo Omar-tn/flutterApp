@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +9,7 @@ import 'package:local/adminOfferingCourses.dart';
 import 'dart:convert';
 
 import 'package:local/itemwidget.dart';
+import 'package:local/root.dart';
 
 class AdminDashboard extends StatefulWidget {
   static final String routName = 'adminDashboard';
@@ -27,6 +30,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int totalStudents = 0;
   int totalSupervisors = 0;
   int pendingRequests = 0;
+  int totalProjects = 0;
+  int activeGroups = 0;
+  int completedProjects = 0;
   List<dynamic> supervisors = [];
   int _selectedIndex = 0;
 
@@ -48,11 +54,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
           '${widget.apiBaseUrl}partners/requests?uid=${widget.firebaseUid}',
         ),
       );
+      final projectsRes = await http.get(
+        Uri.parse('${widget.apiBaseUrl}projects'),
+      );
+      final groupsRes = await http.get(
+        Uri.parse('${widget.apiBaseUrl}groups/active'),
+      );
 
       setState(() {
-        totalStudents = json.decode(studentsRes.body).length;
-        totalSupervisors = json.decode(supervisorsRes.body).length;
-        pendingRequests = json.decode(pendingRes.body).length;
+        totalStudents = json
+            .decode(studentsRes.body)
+            .length;
+        totalSupervisors = json
+            .decode(supervisorsRes.body)
+            .length;
+        pendingRequests = json
+            .decode(pendingRes.body)
+            .length;
+        totalProjects = json
+            .decode(projectsRes.body)
+            .length;
+        activeGroups = json
+            .decode(groupsRes.body)
+            .length;
+        completedProjects = json
+            .decode(projectsRes.body)
+            .where((p) => p['status'] == 'approved')
+            .length;
       });
     } catch (e) {
       print('Error fetching stats: \$e');
@@ -92,7 +120,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         // width: MediaQuery.of(context).size.width *.8,
         // constraints: BoxConstraints(maxWidth: 800),
         child: GridView.count(
-          crossAxisCount: getAxisCount(context, 300),
+          crossAxisCount: (getAxisCount(context, 200) / 1.5).toInt(),
           childAspectRatio: 1.5,
           padding: const EdgeInsets.all(16),
           children: [
@@ -102,6 +130,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
               label: 'Pending Requests',
               value: pendingRequests.toString(),
             ),
+            _StatCard(label: 'Total Project Requests',
+                value: totalProjects.toString()),
+            _StatCard(label: 'Active Groups', value: activeGroups.toString()),
+            _StatCard(label: 'Approved Projects',
+                value: completedProjects.toString()),
           ],
         ),
       ),
@@ -195,7 +228,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    var firebaseUid = "firebase"; // REPLACE: Replace with actual Firebase UID
+    var firebaseUid = root
+        .userId; //"firebase"; // REPLACED: Replace with actual Firebase UID
     final screens = [
       _buildStats(),
       _buildSupervisions(),
@@ -203,8 +237,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       AdminCourseRegistration(firebaseUid: firebaseUid),
     ];
     final titles = [
-      'Dashboard',
-      'Supervisor Approvals',
+      'Overview',
+      'Supervisor Projects',
       'Courses Offering',
       'Course Registration',
     ];
@@ -218,7 +252,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: Text('Admin Menu', style: TextStyle(fontSize: 24)),
             ),
             ListTile(
-              title: const Text('Dashboard'),
+              title: const Text('Overview'),
               leading: const Icon(Icons.dashboard),
               selected: _selectedIndex == 0,
               onTap:
@@ -240,7 +274,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             ListTile(
               title: const Text('Courses Offering'),
-              leading: const Icon(Icons.school),
+              leading: const Icon(Icons.auto_stories_rounded),
               selected: _selectedIndex == 2,
               onTap:
                   () => setState(() {
@@ -264,7 +298,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
               leading: const Icon(Icons.logout),
               onTap: () {
                 // Handle logout logic here
+
+                FirebaseAuth.instance.signOut();
+
                 Navigator.pop(context);
+                Navigator.pushReplacementNamed(
+                  context,
+                  root.initialRoute, // ReplaceD with your login route
+                );
+
+
               },
             ),
           ],
@@ -396,7 +439,7 @@ class _SupervisorDetailsPageState extends State<SupervisorDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Supervisor Details')),
+      appBar: AppBar(title: Text('Supervision Details and Approvals')),
       body: Center(
         child: Container(
           constraints: BoxConstraints(maxWidth: 1200),
@@ -517,11 +560,15 @@ class _SupervisorDetailsPageState extends State<SupervisorDetailsPage> {
                                               ),
                                             ],
                                           ),
+                                          SizedBox(height: 25),
+                                          Text(
+                                              'description: ${request['description']}'),
                                           SizedBox(height: 16),
                                           Row(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.spaceEvenly,
                                             children: [
+
                                               ElevatedButton(
                                                 onPressed:
                                                     () => _handleRequestAction(
@@ -588,6 +635,7 @@ class _SupervisorDetailsPageState extends State<SupervisorDetailsPage> {
 
                                             // Spacer(),
                                             // SizedBox(width: 55),
+
                                             Expanded(
                                               child: Column(
                                                 children: [
@@ -603,7 +651,9 @@ class _SupervisorDetailsPageState extends State<SupervisorDetailsPage> {
                                             ),
                                           ],
                                         ),
-
+                                        SizedBox(height: 25),
+                                        Text(
+                                            'description: ${request['description']}'),
                                         SizedBox(height: 16),
                                         Row(
                                           mainAxisAlignment:

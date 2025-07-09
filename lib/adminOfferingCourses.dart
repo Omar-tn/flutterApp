@@ -79,7 +79,7 @@ class _AdminOfferingCoursesState extends State<AdminOfferingCourses> {
         Uri.parse('${root.domain()}courses_announce'),
         body: {
           'courseId': courseId,
-          'id': '1002', // Replace with actual course ID
+          'id': root.userId, //'1002', // Replaced with actual course ID
           'time': _courseTimeController.text.trim(),
           'max_participants': _courseMaxController.text.trim(),
         },
@@ -240,7 +240,10 @@ class _AdminOfferingCoursesState extends State<AdminOfferingCourses> {
               ? c['participants'] as int
               : c['votes'] as int;
       mosts += most;
-      participants += c['participants'] as int;
+      participants +=
+          (c['participants'] ?? 0) != 0
+              ? c['participants'] as int
+              : c['votes'] as int;
 
       maxs +=
           c['max_participants'] != null ? c['max_participants'] as int : most;

@@ -39,13 +39,17 @@ class _NewRequestPageState extends State<NewRequestPage> {
       final uid = user!.uid;
       final email = user!.email;
       // Save to memory/local storage if needed
+      print('User logged in: $uid, $email, ${user!.displayName}');
     } else {
-      final uid = 'guest'; //REPLACE: replace to this with FIREBASE AUTH
+      final uid = 'guest'; //REPLACED: replaced to this with FIREBASE AUTH
       final email =
-          'sguest@stu.naja.edu'; //REPLACE: replace to this with FIREBASE AUTH
+          'sguest@stu.naja.edu'; //REPLACEd: replaced to this with FIREBASE AUTH
       // Save to memory/local storage if needed
       print('No user logged in, using guest credentials: $uid, $email');
     }
+
+    uid = root.userId; // final assignment
+
   }
 
   @override
@@ -108,8 +112,8 @@ class _NewRequestPageState extends State<NewRequestPage> {
           'course': selectedCourse!['ID'].toString(),
           'type': selectedType,
           'details': _detailsController.text,
-          'user_id': FirebaseAuth.instance.currentUser?.uid ?? 'firebase',
-          //REPLACE: replace to this
+          'user_id': uid,
+          //REPLACEd: replaced to this
         };
 
         try {
@@ -143,8 +147,9 @@ class _NewRequestPageState extends State<NewRequestPage> {
         } catch (e) {
           // Handle connection errors
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('An error occurred while submitting the request.'),
+            SnackBar(
+              content: Text('An error occurred while submitting the request. ${e
+                  .toString()}'),
             ),
           );
         }
@@ -190,7 +195,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('New Course Request'),
+        title: const Text('Registration Request'),
         // backgroundColor: Colors.deepPurple,
       ),
       // bottomNavigationBar: BottomAppBar(

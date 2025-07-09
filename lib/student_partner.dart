@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -13,7 +14,8 @@ class StudentPartnersScreen extends StatefulWidget {
 
 class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
   List<dynamic> availableStudents = [];
-  final String userId = 'firebase'; // Replace with actual user ID
+  final String userId = root
+      .userId; //'firebase'; // Replaced with actual user ID
   List<dynamic> confirmedPartners = [];
 
   var msg = "none";
@@ -106,10 +108,15 @@ class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
 
   @override
   Widget build(BuildContext context) {
-
+    // arary of titles
+    List<String> titles = [
+      'public requests',
+      'Search',
+      'Supervisor',
+    ];
     return Scaffold(
       appBar: AppBar(
-        title: Text('Find a Partner'),
+        title: Text(titles[selectedIndex]),
         actions: [
           IconButton(
             icon: Stack(
@@ -175,7 +182,9 @@ class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
           selectedIndex = index;
           setState(() {
           //change current body of the scaffold
-
+            if (index == 0) {
+              fetchStudents();
+            }
           });
         },
         items: [
@@ -199,126 +208,133 @@ class _StudentPartnersScreenState extends State<StudentPartnersScreen> {
       selectedIndex ==0
 
       ?Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            msg != "none"
-                ? Column(
-                  children: [
-                    Text('Your partners:'),
-                    SizedBox(height: 20),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: confirmedPartners.length,
-                      itemBuilder: (context, index) {
-                        final partner = confirmedPartners[index];
-                        return ListTile(
-                          title: Text(partner['name'] ?? 'Unnamed'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(partner['subject'] ?? 'No course'),
-                              Text(partner['firebase_uid'] ?? 'No section'),
-                              Text(partner['email'] ?? 'No email'),
-                            ],
+        child: SizedBox(
+          width: kIsWeb ? MediaQuery
+              .of(context)
+              .size
+              .width * .4 : double.infinity,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              msg != "none"
+                  ? Column(
+                children: [
+                  Text('Your partners:'),
+                  SizedBox(height: 20),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: confirmedPartners.length,
+                    itemBuilder: (context, index) {
+                      final partner = confirmedPartners[index];
+                      return ListTile(
+                        title: Text(partner['name'] ?? 'Unnamed'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(partner['subject'] ?? 'No course'),
+                            Text(partner['firebase_uid'] ?? 'No section'),
+                            Text(partner['email'] ?? 'No email'),
+                          ],
+                        ),
+                        trailing: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
                           ),
-                          trailing: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                            ),
-                            onPressed: () async {
-                              var id = partner['id'];
-                              try {
-                                final response = await http.delete(
-                                  Uri.parse(
-                                    root.domain() + 'partners/request/$id',
-                                  ),
-                                );
-                                if (response.statusCode == 200) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Partner deleted successfully',
-                                      ),
-                                    ),
-                                  );
-                                  fetchStudents();
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Error deleting request: ${response
-                                            .body}',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                print('Error deleting request: $e');
+                          onPressed: () async {
+                            var id = partner['id'];
+                            try {
+                              final response = await http.delete(
+                                Uri.parse(
+                                  root.domain() + 'partners/request/$id',
+                                ),
+                              );
+                              if (response.statusCode == 200) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Error deleting request. Please try again later.',
+                                      'Partner deleted successfully',
+                                    ),
+                                  ),
+                                );
+                                fetchStudents();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error deleting request: ${response
+                                          .body}',
                                     ),
                                   ),
                                 );
                               }
-                            },
-                            child: Text('Remove'),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 20),
-                    Container(
-                      margin: EdgeInsets.symmetric(horizontal: 15),
-                      child: Divider(thickness: 20, color: Colors.teal),
-                    ),
-                    SizedBox(height: 50),
-
-                  ],
-                )
-                : SizedBox.shrink(),
-
-            availableStudents.isEmpty
-                ? msg == "full"
-                ? Center(child: Text('You have full number of partners',
-                style: TextStyle(fontSize: 25,
-                    fontFamily: 'Roboto',
-                  fontWeight: FontWeight.bold,
-                    color: Colors.green)
-                ))
-                :Center(child: Text('No available students found'))
-                : Center(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: availableStudents.length,
-                    itemBuilder: (context, index) {
-                      final student = availableStudents[index];
-                      return ListTile(
-                        title: Text(student['name'] ?? 'Unnamed'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(student['subject'] ?? 'No course'),
-                            Text(student['firebase_uid'] ?? 'No section'),
-                            Text(student['email'] ?? 'No email'),
-                          ],
-                        ),
-
-                        trailing: ElevatedButton(
-                          onPressed:
-                              () => sendRequest(
-                                student['firebase_uid'],
-                                student['subject'],
-                              ),
-                          child: Text('Request'),
+                            } catch (e) {
+                              print('Error deleting request: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Error deleting request. Please try again later.',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          child: Text('Remove'),
                         ),
                       );
                     },
                   ),
+                  SizedBox(height: 20),
+                  Container(
+                    margin: EdgeInsets.symmetric(horizontal: 15),
+                    child: Divider(thickness: 20, color: Colors.teal),
+                  ),
+                  SizedBox(height: 50),
+
+                ],
+              )
+                  : SizedBox.shrink(),
+
+              availableStudents.isEmpty
+                  ? msg == "full"
+                  ? Center(child: Text('You have full number of partners',
+                  style: TextStyle(fontSize: 25,
+                      fontFamily: 'Roboto',
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green)
+              ))
+                  : Center(child: Text('No available students found'))
+                  : Center(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: availableStudents.length,
+                  itemBuilder: (context, index) {
+                    final student = availableStudents[index];
+                    return ListTile(
+                      title: Text(student['name'] ?? 'Unnamed'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(student['subject'] ?? 'No course'),
+                          Text(student['firebase_uid'] ?? 'No section'),
+                          Text(student['email'] ?? 'No email'),
+                        ],
+                      ),
+
+                      trailing: ElevatedButton(
+                        onPressed:
+                            () =>
+                            sendRequest(
+                              student['firebase_uid'],
+                              student['subject'],
+                            ),
+                        child: Text('Request'),
+                      ),
+                    );
+                  },
                 ),
-          ],
+              ),
+            ],
+          ),
         ),
       )
           : taps[selectedIndex]
@@ -345,7 +361,8 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   List<dynamic> partnerRequests = [];
-  final String userId = 'firebase'; // Replace with actual user ID
+  final String userId = root
+      .userId; //'firebase'; // Replaced with actual user ID
   bool isLoading = false;
 
   @override
@@ -504,152 +521,162 @@ class _searchState extends State<search> {
 
   String text = "";
 
-  final String userId = 'firebase'; //REPLACE: Replace with actual user ID
+  final String userId = root
+      .userId; //'firebase'; //REPLACEd: Replaced with actual user ID
   var formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Form(
-        key: formKey,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Select Subject'),
-              items: ['GP1', 'GP2']
-                  .map((subject) =>
-                  DropdownMenuItem<String>(
-                    value: subject,
-                    child: Text(subject),
-                  ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  // Update the selected subject
-                });
-                sub = value! ;
-              },
-              validator: (value) =>
-              value == null ? 'Please select a subject' : null,
-            ),
-            SizedBox(height: 20),
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(labelText: 'Select Search Type'),
-              items: ['Name', 'firebase_uid']
-                  .map((searchType) =>
-                  DropdownMenuItem<String>(
-                    value: searchType,
-                    child: Text(searchType),
-                  ))
-                  .toList(),
-              onChanged: (value) {
-                field = value!;
-              },
-              validator: (value) =>
-              value == null ? 'Please select a search type' : null,
-            ),
-            SizedBox(height: 20),
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: 'Search',
-                hintText: "Enter search text",
-                helperText: "student name or firebase_uid",
-                border: OutlineInputBorder(),
+      child: SizedBox(
+        width: kIsWeb ? MediaQuery
+            .of(context)
+            .size
+            .width * .4 : MediaQuery
+            .of(context)
+            .size
+            .width * .8,
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(labelText: 'Select Subject'),
+                items: ['GP1', 'GP2']
+                    .map((subject) =>
+                    DropdownMenuItem<String>(
+                      value: subject,
+                      child: Text(subject),
+                    ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    // Update the selected subject
+                  });
+                  sub = value!;
+                },
+                validator: (value) =>
+                value == null ? 'Please select a subject' : null,
               ),
-              onChanged: (value) {
-                text = value;
-              },
-              validator: (value) =>
-              value == null || value.isEmpty ? 'Search text required' : null,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                if (formKey.currentState!.validate() ?? false) {
-                  // Handle validated search button press
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => searchResult(
+              SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(labelText: 'Select Search Type'),
+                items: ['Name', 'firebase_uid']
+                    .map((searchType) =>
+                    DropdownMenuItem<String>(
+                      value: searchType,
+                      child: Text(searchType),
+                    ))
+                    .toList(),
+                onChanged: (value) {
+                  field = value!;
+                },
+                validator: (value) =>
+                value == null ? 'Please select a search type' : null,
+              ),
+              SizedBox(height: 20),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  hintText: "Enter search text",
+                  helperText: "student name or firebase_uid",
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  text = value;
+                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Search text required' : null,
+              ),
+              SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (formKey.currentState!.validate() ?? false) {
+                    // Handle validated search button press
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            searchResult(
 
-                        uid: userId,
-                        subject: sub ?? 'GP1'   ,
-                        field: field ?? 'Name',
-                        text: text,
+                              uid: userId,
+                              subject: sub ?? 'GP1',
+                              field: field ?? 'Name',
+                              text: text,
+                            ),
                       ),
-                    ),
-                  );
+                    );
+                  }
+                },
+                label: Text('Search'),
+                icon: Icon(Icons.search),
 
-                }
-              },
-              label: Text('Search'),
-              icon: Icon(Icons.search),
-
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
 
 
-              onPressed: sub.isEmpty ? null : () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: Text('Confirmation'),
-                      content: Text(
-                          'Are you sure you want to make a public request?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(false);
-                          },
-                          child: Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.of(context).pop(true);
-                            try {
-                              final response = await http.post(
-                                Uri.parse(root.domain() + 'partners/request'),
-                                body: {
-                                  'from_id': userId,
-                                  'to_id': '',
-                                  'subject': sub,
-                                },
-                              );
-                              if (response.statusCode == 200) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(
-                                      'Public request created successfully for $sub')),
+                onPressed: sub.isEmpty ? null : () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Confirmation'),
+                        content: Text(
+                            'Are you sure you want to make a public request?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(false);
+                            },
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.of(context).pop(true);
+                              try {
+                                final response = await http.post(
+                                  Uri.parse(root.domain() + 'partners/request'),
+                                  body: {
+                                    'from_id': userId,
+                                    'to_id': '',
+                                    'subject': sub,
+                                  },
                                 );
-                              } else {
+                                if (response.statusCode == 200) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(
+                                        'Public request created successfully for $sub')),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(
+                                        'Error creating public request: ${response
+                                            .body}')),
+                                  );
+                                }
+                              } catch (e) {
+                                print('Error creating public request: $e');
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(
-                                      'Error creating public request: ${response
-                                          .body}')),
+                                      'Error creating public request. Please try again later.')),
                                 );
                               }
-                            } catch (e) {
-                              print('Error creating public request: $e');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(
-                                    'Error creating public request. Please try again later.')),
-                              );
-                            }
-                          },
-                          child: Text('Confirm'),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: sub.isEmpty ? Colors.grey : null,
+                            },
+                            child: Text('Confirm'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: sub.isEmpty ? Colors.grey : null,
+                ),
+                child: Text('Public Request'),
               ),
-              child: Text('Public Request'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -698,7 +725,8 @@ class _searchResultState extends State<searchResult> {
       final response = await http.post(
         Uri.parse(root.domain() + 'partners/request'),
         body: {
-          'from_id': 'firebase', // Replace with actual user ID if needed
+          'from_id': widget.uid,
+          //root.userId , //'firebase', // Replaced with actual user ID if needed
           'to_id': toUid,
           'subject': subject,
         },
@@ -796,7 +824,13 @@ class _searchResultState extends State<searchResult> {
             margin: EdgeInsets.all(8.0),
             child: ListTile(
               title: Text(searchResults[index]['name'] ?? ''),
-              subtitle: Text(searchResults[index]['field'] ?? ''),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(searchResults[index]['firebase_uid'] ?? ''),
+                  Text(searchResults[index]['email'] ?? ''),
+                ],
+              ),
               trailing: ElevatedButton(
                 onPressed: () {
                   sendPartnershipRequest(
@@ -823,7 +857,8 @@ class supervisor extends StatefulWidget {
 }
 
 class _supervisorState extends State<supervisor> {
-  String userId = 'firebase'; //REPLACE: Replace with actual user ID 
+  String userId = root
+      .userId; //'firebase'; //REPLACEd: Replaced with actual user ID
   List<dynamic> partners = [];
   List<dynamic> supervisors = [];
   bool isLoading = false;
@@ -912,95 +947,103 @@ class _supervisorState extends State<supervisor> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: partners.isEmpty
-          ? Text('You have no partners',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))
-          : Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Request Supervisor',
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headlineMedium,
-              ),
-              SizedBox(height: 20),
-              DropdownButtonFormField<Map<String, dynamic>>(
-                decoration: InputDecoration(labelText: 'Select Subject'),
-                value: selectedPartnership,
-                items: partners.map((partner) {
-                  return DropdownMenuItem<Map<String, dynamic>>(
-                    value: partner,
-                    child: Text(partner['subject'] ?? ''),
-                  );
-                }).toList(),
-                validator: (value) =>
-                value == null ? 'Please select a subject' : null,
-                onChanged: (value) {
-                  setState(() {
-                    selectedPartnership = value;
-                    selectedSubject = value?['subject'];
-                  });
-                },
-              ),
-              SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                decoration: InputDecoration(labelText: 'Select Supervisor'),
-                value: selectedDoctor,
-                items: isLoading
-                    ? [
-                  DropdownMenuItem<String>(
-                      value: null, child: Text('Loading...'))
-                ]
-                    :
-                supervisors.map((supervisor) =>
-
-
-                    DropdownMenuItem<String>(
-                      value: supervisor['firebase_uid'].toString(),
-                      child: Text(supervisor['name'] ?? ''),
-                    )
-                ).toList(),
-                validator: (value) =>
-                value == null ? 'Please select a supervisor' : null,
-                onChanged: (value) {
-                  setState(() {
-                    selectedDoctor = value;
-                  });
-                },
-              ),
-              SizedBox(height: 20),
-              TextFormField(
-                decoration: InputDecoration(
-                  labelText: 'Project Description',
-                  border: OutlineInputBorder(),
+      child: SizedBox(
+        width: kIsWeb ? MediaQuery
+            .of(context)
+            .size
+            .width * .4 : double.infinity,
+        child: partners.isEmpty
+            ? Center(
+          child: Text('You have no partners',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        )
+            : Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Request Supervisor',
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headlineMedium,
                 ),
-                maxLines: 3,
-                validator: (value) =>
-                value != null && value.isEmpty
-                    ? null
-                    : null,
-                onChanged: (value) {
-                  setState(() {
-                    projectDescription = value;
-                  });
-                },
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    submitSupervisorRequest();
-                  }
-                },
-                child: Text('Submit Request'),
-              ),
-            ],
+                SizedBox(height: 20),
+                DropdownButtonFormField<Map<String, dynamic>>(
+                  decoration: InputDecoration(labelText: 'Select Subject'),
+                  value: selectedPartnership,
+                  items: partners.map((partner) {
+                    return DropdownMenuItem<Map<String, dynamic>>(
+                      value: partner,
+                      child: Text(partner['subject'] ?? ''),
+                    );
+                  }).toList(),
+                  validator: (value) =>
+                  value == null ? 'Please select a subject' : null,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedPartnership = value;
+                      selectedSubject = value?['subject'];
+                    });
+                  },
+                ),
+                SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(labelText: 'Select Supervisor'),
+                  value: selectedDoctor,
+                  items: isLoading
+                      ? [
+                    DropdownMenuItem<String>(
+                        value: null, child: Text('Loading...'))
+                  ]
+                      :
+                  supervisors.map((supervisor) =>
+
+
+                      DropdownMenuItem<String>(
+                        value: supervisor['firebase_uid'].toString(),
+                        child: Text(supervisor['name'] ?? ''),
+                      )
+                  ).toList(),
+                  validator: (value) =>
+                  value == null ? 'Please select a supervisor' : null,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedDoctor = value;
+                    });
+                  },
+                ),
+                SizedBox(height: 20),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Project Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                  validator: (value) =>
+                  value != null && value.isEmpty
+                      ? null
+                      : null,
+                  onChanged: (value) {
+                    setState(() {
+                      projectDescription = value;
+                    });
+                  },
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      submitSupervisorRequest();
+                    }
+                  },
+                  child: Text('Submit Request'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1025,11 +1068,11 @@ class _supervisorState extends State<supervisor> {
           SnackBar(content: Text('Supervisor request submitted successfully')),
         );
         setState(() {
+          _formKey.currentState?.reset();
           selectedSubject = null;
           selectedDoctor = null;
           selectedPartnership = null;
           projectDescription = '';
-          //_formKey.currentState?.reset();
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

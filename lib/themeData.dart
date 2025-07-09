@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local/main.dart';
 
 class themeD {
   static final mainColor = Colors.blue;
@@ -193,4 +194,8 @@ class themeD {
       ),
     ),
   );
+
+  static void changeTheme() {
+    testAppKey.currentState?.changeTheme();
+  }
 }

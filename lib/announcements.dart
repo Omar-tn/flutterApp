@@ -12,7 +12,8 @@ class CourseAnnouncementsScreen extends StatefulWidget {
 
 class _CourseAnnouncementsScreenState extends State<CourseAnnouncementsScreen> {
   List<dynamic> courses = [];
-  String userId = "firebase"; // Replace with actual UID from Firebase Auth
+  String userId = root
+      .userId; //"firebase"; // DONEReplace with actual UID from Firebase Auth
 
   @override
   void initState() {

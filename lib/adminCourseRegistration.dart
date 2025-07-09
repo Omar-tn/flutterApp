@@ -244,7 +244,9 @@ class _AdminCourseRegistrationState extends State<AdminCourseRegistration> {
                           ? Text(
                             'Participants: ${request['Participants'] ?? 0} / ${request['max_participants']}',
                           )
-                          : SizedBox.shrink(),
+                          : Text(
+                          'Participants: ${request['Participants'] ?? 0} / ∞'),
+
                       // Text('Request ID: ${request['id']}'),
                       //     request['reason'] == null ||
                       request['reason']?.isEmpty
@@ -326,6 +328,55 @@ class _AnnouncedCourseScreenState extends State<AnnouncedCourseScreen> {
     _fetchCourses();
   }
 
+  Future<void> _deleteAnncements() async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${root.domain()}announcements/deleteAll'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          courses = [];
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('All announcements deleted successfully')),
+        );
+      } else {
+        throw Exception('Failed to delete announcements');
+      }
+    } catch (e) {
+      print('Error deleting announcements: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting announcements: $e')),
+      );
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('${root.domain()}courses_announce/newSemester'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+
+          'uid': root.userId, // Use the current user's ID
+        }),
+      );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('New semester created successfully')),
+        );
+        _fetchCourses(); // Refresh the course list
+      } else {
+        throw Exception('Failed to create new semester');
+      }
+    } catch (e) {
+      print('Error creating new semester: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating new semester: $e')),
+      );
+    }
+  }
+
   Future<void> _fetchCourses() async {
     try {
       isloading = true;
@@ -365,6 +416,54 @@ class _AnnouncedCourseScreenState extends State<AnnouncedCourseScreen> {
           icon: Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          ElevatedButton(
+              onPressed: () {
+                // Delete all announcements
+                showDialog(
+                  context: context,
+                  builder: (context) =>
+                      AlertDialog(
+                        title: Text('Delete All Announcements'),
+                        content: Text(
+                          'Are you sure you want to delete all course announcements?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              _deleteAnncements();
+                              Navigator.pop(context);
+                            },
+                            child: Text('Delete'),
+                          ),
+                        ],
+                      ),
+                );
+              },
+
+              // _
+
+              child: Row(
+                  children: [
+
+                    Text('New Semester', style: TextStyle(color: Colors.white)),
+
+                    SizedBox(width: 8),
+                    Icon(Icons.delete, color: Colors.white),
+                  ]
+              ),
+              // Use red color for the button
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red, // Text color
+              )
+
+          )
+        ],
       ),
       body: Center(
         child:
@@ -440,6 +539,7 @@ class _AnnouncedCourseScreenState extends State<AnnouncedCourseScreen> {
       ),
     );
   }
+
 }
 
 //create a new screen to show course students

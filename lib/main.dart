@@ -2,14 +2,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:local/auth_gate.dart';
 import 'package:local/counter.dart';
 import 'package:local/dashboard.dart';
 import 'package:local/home.dart';
 import 'package:local/homepage.dart';
 import 'package:local/login.dart';
 import 'package:local/root.dart';
+import 'package:local/signup.dart';
 import 'package:local/student_partner.dart';
 import 'package:local/themeData.dart';
+
+import 'firebase_options.dart';
 
 // Must be a top-level function
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -19,7 +23,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (kIsWeb) {
+  /*if (kIsWeb) {
     await Firebase.initializeApp(
       options: FirebaseOptions(
           apiKey: "AIzaSyBnaOt5fXNYUNGEtdVubRonek_ORrOLjT4",
@@ -29,25 +33,41 @@ void main() async {
           messagingSenderId: "506800753202",
           appId: "1:506800753202:web:c144765c6170e1eb564a2b"
       ),
+
     );
   } else {
     await Firebase.initializeApp();
-  }
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(testApp());
+  }*/
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FFirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  runApp(testApp(key: testAppKey));
 }
 
+final GlobalKey<_testAppState> testAppKey = GlobalKey<_testAppState>();
 
-class testApp extends StatelessWidget {
+class testApp extends StatefulWidget {
+  const testApp({Key? key}) : super(key: key);
+  static ThemeData theThemeD = themeD.lightMode;
+  static bool flagLight = true;
+
+  @override
+  State<testApp> createState() => _testAppState();
+
+
+}
+
+class _testAppState extends State<testApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      initialRoute: login.routName,
+      initialRoute: root.debug ? login.routName : AuthGate.routName,
 
       debugShowCheckedModeBanner: false,
 
       routes: {
 
+        AuthGate.routName: (context) => AuthGate(),
+        SignUpPage.routName: (context) => SignUpPage(),
         login.routName: (context) => login(),
 
         homePage.routName: (context) => homePage(),
@@ -62,8 +82,17 @@ class testApp extends StatelessWidget {
 
       },
 
-      theme: themeD.lightMode,
+      theme: testApp
+          .theThemeD, // TODO: manage themes properly to change dynamically in app by theme option
     );
+  }
+
+  void changeTheme() {
+    setState(() {
+      testApp.flagLight = !testApp.flagLight;
+      testApp.theThemeD =
+      testApp.flagLight ? themeD.lightMode : themeD.darkMode;
+    });
   }
 }
 
